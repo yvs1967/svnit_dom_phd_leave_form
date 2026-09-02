@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ph.D Leave Application Form</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <style>
+    .a4-portrait {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 20mm 15mm;
+      background: #ffffff;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+      box-sizing: border-box;
+    }
+    .a4-landscape {
+      width: 297mm;
+      min-height: 210mm;
+      padding: 15mm 20mm;
+      background: #ffffff;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+      box-sizing: border-box;
+    }
+    .dotted-line {
+      border-bottom: 1px dotted #000;
+      display: inline-block;
+    }
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+    }
+    .strike-container {
+      position: relative;
+      display: inline-block;
+    }
+    .strike-line {
+      position: absolute;
+      top: 52%;
+      left: -2px;
+      right: -2px;
+      height: 1.5px;
+      background-color: #111827;
+      display: none;
+    }
+    .struck .strike-line {
+      display: block;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800">
+
+  <div class="max-w-4xl mx-auto py-10 px-4">
+    <div class="bg-white rounded-xl shadow-md p-8 border border-gray-200">
+      <h1 class="text-2xl font-bold text-center text-gray-900 mb-2">Ph.D. Leave Application Generator</h1>
+      <p class="text-center text-sm text-gray-500 mb-8">Department of Mathematics, SVNIT Surat</p>
+
+      <form id="leaveForm" class="space-y-6">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Page 1: General Leave Details</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Student Name</label>
+              <input type="text" id="f_studentName" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Roll No.</label>
+              <input type="text" id="f_rollNo" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Category</label>
+              <input type="text" id="f_category" placeholder="e.g., Full-Time / Institute Fellow" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Application Date</label>
+              <input type="date" id="f_date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Type of Leave Requested (The other two will be struck through)</label>
+          <select id="f_leaveType" class="w-full md:w-1/2 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="Granted Leave">Granted Leave</option>
+            <option value="Casual Leave">Casual Leave</option>
+            <option value="Duty Leave">Duty Leave</option>
+          </select>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg border">
+          <label class="block text-sm font-semibold mb-2">Leave Period Entry Mode</label>
+          <div class="flex space-x-6 mb-4 text-sm">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="radio" name="dateMode" value="ranges" checked onchange="toggleDateMode()">
+              <span>Date Range(s) [From ... To ...]</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="radio" name="dateMode" value="specific" onchange="toggleDateMode()">
+              <span>Specific / Individual Dates</span>
+            </label>
+          </div>
+
+          <div id="rangeModeContainer">
+            <div id="rangeList" class="space-y-3">
+              <div class="range-row flex items-center space-x-2">
+                <span class="text-xs text-gray-500">From</span>
+                <input type="date" class="r-from border rounded px-2 py-1.5 text-sm outline-none" onchange="calculateAutoDays()">
+                <span class="text-xs text-gray-500">To</span>
+                <input type="date" class="r-to border rounded px-2 py-1.5 text-sm outline-none" onchange="calculateAutoDays()">
+                <button type="button" onclick="deleteRangeRow(this)" class="text-red-500 hover:text-red-700 font-bold px-2">×</button>
+              </div>
+            </div>
+            <button type="button" onclick="addRangeRow()" class="mt-3 text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-3 py-1.5 rounded">
+              + Add Another Date Range (Skip Holiday)
+            </button>
+          </div>
+
+          <div id="specificModeContainer" class="hidden">
+            <div id="specificList" class="space-y-2">
+              <div class="specific-row flex items-center space-x-2">
+                <input type="date" class="s-date border rounded px-2 py-1.5 text-sm outline-none" onchange="calculateAutoDays()">
+                <button type="button" onclick="deleteSpecificRow(this)" class="text-red-500 hover:text-red-700 font-bold px-2">×</button>
+              </div>
+            </div>
+            <button type="button" onclick="addSpecificRow()" class="mt-3 text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-3 py-1.5 rounded">
+              + Add Specific Date
+            </button>
+          </div>
+
+          <div class="mt-4 pt-3 border-t flex flex-wrap gap-4 text-xs font-semibold">
+            <div class="bg-blue-50 text-blue-800 px-3 py-1.5 rounded border border-blue-200">
+              Calculated Leave Days (Excl. Weekends): <span id="autoWorkingDays">0</span>
+            </div>
+            <div class="bg-amber-50 text-amber-800 px-3 py-1.5 rounded border border-amber-200">
+              Weekend / Off Days Count: <span id="autoHolidays">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Total Number of Days Requested</label>
+          <input type="number" id="f_days" required placeholder="Calculated automatically" class="w-full md:w-1/3 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Reason / Leave Details</label>
+          <textarea id="f_leaveReason" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        </div>
+
+        <div class="pt-4 border-t">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-700">Page 2: Alternative Class Arrangement</h2>
+              <p class="text-xs text-gray-500">Classes to be engaged by substitutes</p>
+            </div>
+            <button type="button" onclick="addRow()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg">+ Add Row</button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left border" id="arrangementTableInput">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="p-2 border">Date & Day</th>
+                  <th class="p-2 border">Class (B.Tech/M.Tech)</th>
+                  <th class="p-2 border">Subject (L/T/P)</th>
+                  <th class="p-2 border">Period</th>
+                  <th class="p-2 border">Substitute Scholar Name</th>
+                  <th class="p-2 border text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="rowsContainer">
+                <tr class="arrangement-row">
+                  <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-date" placeholder="e.g. 05-10-2026 Mon"></td>
+                  <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-class" placeholder="B.Tech II Sem"></td>
+                  <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-sub" placeholder="MA102 (L)"></td>
+                  <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-period" placeholder="3rd (10-11 AM)"></td>
+                  <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-name" placeholder="Scholar Name"></td>
+                  <td class="p-1 border text-center"><button type="button" onclick="deleteRow(this)" class="text-red-500 hover:text-red-700 font-bold">×</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <button type="button" onclick="generateMultiPagePDF()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition">
+          Generate & Download Application PDF
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: -9999px; top: 0;">
+    
+    <div id="print-page-1" class="a4-portrait flex flex-col justify-between">
+      <div>
+        <div class="text-center font-bold mb-8">
+          <p class="text-xl underline">Department of Mathematics</p>
+          <p class="text-lg underline mt-1">Leave Application for Ph.D</p>
+        </div>
+
+        <div class="flex justify-end mb-6 text-base">
+          <div><span class="font-bold">Date:</span> <span class="dotted-line min-w-[120px] text-center" id="p1_date"></span></div>
+        </div>
+
+        <div class="space-y-4 text-[15px] leading-relaxed">
+          <div>
+            <span class="font-bold">Student Name:</span> 
+            <span class="dotted-line min-w-[300px] pl-2" id="p1_name"></span>
+          </div>
+          <div>
+            <span class="font-bold">Roll No:</span> 
+            <span class="dotted-line min-w-[200px] pl-2" id="p1_roll"></span>
+          </div>
+          <div>
+            <span class="font-bold">Category:</span> 
+            <span class="dotted-line min-w-[250px] pl-2" id="p1_category"></span>
+          </div>
+          <div>
+            <span class="font-bold">Type of Leave Requested:</span> 
+            <span class="ml-1 inline-flex items-center space-x-1">
+              <span id="opt_granted" class="strike-container"><span>Granted Leave</span><span class="strike-line"></span></span>/ 
+              <span id="opt_casual" class="strike-container"><span>Casual Leave</span><span class="strike-line"></span></span>/ 
+              <span id="opt_duty" class="strike-container"><span>Duty Leave</span><span class="strike-line"></span></span>
+            </span>
+          </div>
+          <div>
+            <span class="font-bold">Leave Details:</span> 
+            <span class="dotted-line w-[80%] pl-2" id="p1_details"></span>
+          </div>
+          <div id="p1_leavePeriodWrapper"></div>
+          <div>
+            <span class="font-bold">Total number of days Requested:</span> 
+            <span class="dotted-line min-w-[80px] text-center" id="p1_days"></span>
+          </div>
+          <div>
+            <span class="font-bold">Alternate Arrangement:</span> 
+            <span>(As per page no.2)</span>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-end mt-16 text-[15px]">
+          <div class="font-bold">Through Supervisor</div>
+          <div class="text-center font-bold">
+            <div class="h-10"></div>
+            Student Signature
+          </div>
+        </div>
+
+        <div class="mt-12">
+          <div class="text-center font-bold underline mb-2 text-sm">Office Record</div>
+          <table class="w-full text-sm">
+            <tr>
+              <td class="p-2 font-bold w-1/3">Total Leave:</td>
+              <td class="p-2 w-2/3"></td>
+            </tr>
+            <tr>
+              <td class="p-2 font-bold">Used Leave:</td>
+              <td class="p-2"></td>
+            </tr>
+            <tr>
+              <td class="p-2 font-bold">Balance Leave:</td>
+              <td class="p-2"></td>
+            </tr>
+            <tr>
+              <td class="p-2 font-bold">Verified by:</td>
+              <td class="p-2 h-10"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-end mt-12 text-[15px] font-bold">
+          <div>Signature of Ph. D Coordinator</div>
+          <div>Head of the Department</div>
+        </div>
+
+        <div class="mt-6 text-xs italic text-gray-700">
+          *In case of Duty Leave, Please attach reference documents.
+        </div>
+
+        <div class="text-right text-xs mt-4">
+          Page | 1
+        </div>
+      </div>
+    </div>
+
+    <div id="print-page-2" class="a4-landscape flex flex-col justify-between">
+      <div>
+        <div class="text-center font-bold mb-4">
+          <p class="text-lg underline">Department of Mathematics , SVNIT, SURAT</p>
+          <p class="text-base underline mt-1">Alternative arrangement of classes</p>
+        </div>
+
+        <div class="space-y-2 text-sm mb-4">
+          <div>
+            <span class="font-bold">Name of Research Scholar :</span>
+            <span class="dotted-line min-w-[320px] pl-2" id="p2_name"></span>
+          </div>
+          <div id="p2_durationWrapper"></div>
+          <div>
+            <span class="font-bold">Purpose (Reason) of Leave / Not-Engaging regular class:</span>
+            <span class="dotted-line min-w-[360px] pl-2" id="p2_reason"></span>
+          </div>
+        </div>
+
+        <table class="w-full text-xs text-center border mt-4">
+          <thead>
+            <tr class="font-semibold bg-gray-50">
+              <th class="p-2 w-[16%]">Date & Day</th>
+              <th class="p-2 w-[18%]">Class (B.Tech / M.Tech)</th>
+              <th class="p-2 w-[18%]">Subject (L/T/P)</th>
+              <th class="p-2 w-[12%]">Period</th>
+              <th class="p-2 w-[22%]">Research Scholar / TA to Whom class is assigned<br><span class="font-normal">Name</span></th>
+              <th class="p-2 w-[14%]">Signature</th>
+            </tr>
+          </thead>
+          <tbody id="p2_table_body"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-8">
+        <div class="flex justify-between items-end text-sm">
+          <div>
+            <span class="font-bold">Date:</span>
+            <span class="dotted-line min-w-[120px] text-center" id="p2_date"></span>
+          </div>
+          <div>
+            <span class="font-bold">Signature:</span>
+            <span class="dotted-line min-w-[180px]"></span>
+          </div>
+        </div>
+
+        <div class="text-right text-xs mt-6">
+          Page | 2
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Helper to format ISO date string (YYYY-MM-DD) into DD-MM-YYYY
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      return dateStr;
+    }
+
+    document.getElementById('f_date').valueAsDate = new Date();
+
+    function toggleDateMode() {
+      const mode = document.querySelector('input[name="dateMode"]:checked').value;
+      if (mode === 'ranges') {
+        document.getElementById('rangeModeContainer').classList.remove('hidden');
+        document.getElementById('specificModeContainer').classList.add('hidden');
+      } else {
+        document.getElementById('rangeModeContainer').classList.add('hidden');
+        document.getElementById('specificModeContainer').classList.remove('hidden');
+      }
+      calculateAutoDays();
+    }
+
+    function addRangeRow() {
+      const list = document.getElementById('rangeList');
+      const div = document.createElement('div');
+      div.className = 'range-row flex items-center space-x-2';
+      div.innerHTML = `
+        <span class="text-xs text-gray-500">From</span>
+        <input type="date" class="r-from border rounded px-2 py-1.5 text-sm outline-none" onchange="calculateAutoDays()">
+        <span class="text-xs text-gray-500">To</span>
+        <input type="date" class="r-to border rounded px-2 py-1.5 text-sm outline-none" onchange="calculateAutoDays()">
+        <button type="button" onclick="deleteRangeRow(this)" class="text-red-500 hover:text-red-700 font-bold px-2">×</button>
+      `;
+      list.appendChild(div);
+    }
+
+    function deleteRangeRow(btn) {
+      const rows = document.querySelectorAll('.range-row');
+      if (rows.length > 1) {
+        btn.closest('.range-row').remove();
+        calculateAutoDays();
+      }
+    }
+
+    function addSpecificRow() {
+      const list = document.getElementById('specificList');
+      const div = document.createElement('div');
+      div.className = 'specific-row flex items-center space-x-2';
+      div.innerHTML = `
+        <input type="date" class="s-date border rounded px-2 py-1.5 text-sm outline-none" onchange="calculateAutoDays()">
+        <button type="button" onclick="deleteSpecificRow(this)" class="text-red-500 hover:text-red-700 font-bold px-2">×</button>
+      `;
+      list.appendChild(div);
+    }
+
+    function deleteSpecificRow(btn) {
+      const rows = document.querySelectorAll('.specific-row');
+      if (rows.length > 1) {
+        btn.closest('.specific-row').remove();
+        calculateAutoDays();
+      }
+    }
+
+    function calculateAutoDays() {
+      const mode = document.querySelector('input[name="dateMode"]:checked').value;
+      let workingDays = 0;
+      let holidays = 0;
+      const seenDates = new Set();
+
+      if (mode === 'ranges') {
+        const rows = document.querySelectorAll('.range-row');
+        rows.forEach(r => {
+          const fromVal = r.querySelector('.r-from').value;
+          const toVal = r.querySelector('.r-to').value;
+          if (fromVal && toVal) {
+            let cur = new Date(fromVal);
+            const end = new Date(toVal);
+            while (cur <= end) {
+              const key = cur.toISOString().split('T')[0];
+              if (!seenDates.has(key)) {
+                seenDates.add(key);
+                const day = cur.getDay();
+                if (day === 0 || day === 6) {
+                  holidays++;
+                } else {
+                  workingDays++;
+                }
+              }
+              cur.setDate(cur.getDate() + 1);
+            }
+          }
+        });
+      } else {
+        const rows = document.querySelectorAll('.s-date');
+        rows.forEach(input => {
+          if (input.value && !seenDates.has(input.value)) {
+            seenDates.add(input.value);
+            const d = new Date(input.value);
+            const day = d.getDay();
+            if (day === 0 || day === 6) {
+              holidays++;
+            } else {
+              workingDays++;
+            }
+          }
+        });
+      }
+
+      document.getElementById('autoWorkingDays').innerText = workingDays;
+      document.getElementById('autoHolidays').innerText = holidays;
+      document.getElementById('f_days').value = workingDays;
+    }
+
+    function addRow() {
+      const container = document.getElementById('rowsContainer');
+      const row = document.createElement('tr');
+      row.className = 'arrangement-row';
+      row.innerHTML = `
+        <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-date" placeholder="Date & Day (DD-MM-YYYY)"></td>
+        <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-class" placeholder="Class"></td>
+        <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-sub" placeholder="Subject"></td>
+        <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-period" placeholder="Period"></td>
+        <td class="p-1 border"><input type="text" class="w-full border-0 p-1 text-xs outline-none r-name" placeholder="Scholar Name"></td>
+        <td class="p-1 border text-center"><button type="button" onclick="deleteRow(this)" class="text-red-500 hover:text-red-700 font-bold">×</button></td>
+      `;
+      container.appendChild(row);
+    }
+
+    function deleteRow(btn) {
+      const rows = document.querySelectorAll('.arrangement-row');
+      if (rows.length > 1) btn.closest('tr').remove();
+    }
+
+    async function generateMultiPagePDF() {
+      const studentName = document.getElementById('f_studentName').value || ' ';
+      const rollNo = document.getElementById('f_rollNo').value || ' ';
+      const category = document.getElementById('f_category').value || ' ';
+      const appDate = formatDate(document.getElementById('f_date').value) || ' ';
+      const leaveType = document.getElementById('f_leaveType').value;
+      const days = document.getElementById('f_days').value || ' ';
+      const reason = document.getElementById('f_leaveReason').value || ' ';
+
+      // 1. Page Details Binding
+      document.getElementById('p1_name').innerText = studentName;
+      document.getElementById('p1_roll').innerText = rollNo;
+      document.getElementById('p1_category').innerText = category;
+      document.getElementById('p1_date').innerText = appDate;
+      document.getElementById('p1_days').innerText = days;
+      document.getElementById('p1_details').innerText = reason;
+
+      document.getElementById('p2_name').innerText = studentName;
+      document.getElementById('p2_reason').innerText = reason;
+      document.getElementById('p2_date').innerText = appDate;
+
+      // 2. Reliable Strikethrough Placement
+      const optGranted = document.getElementById('opt_granted');
+      const optCasual = document.getElementById('opt_casual');
+      const optDuty = document.getElementById('opt_duty');
+
+      [optGranted, optCasual, optDuty].forEach(el => el.classList.remove('struck'));
+
+      if (leaveType === 'Granted Leave') {
+        optCasual.classList.add('struck');
+        optDuty.classList.add('struck');
+      } else if (leaveType === 'Casual Leave') {
+        optGranted.classList.add('struck');
+        optDuty.classList.add('struck');
+      } else if (leaveType === 'Duty Leave') {
+        optGranted.classList.add('struck');
+        optCasual.classList.add('struck');
+      }
+
+      // 3. Date Presentation (DD-MM-YYYY format)
+      const dateMode = document.querySelector('input[name="dateMode"]:checked').value;
+      const p1Wrapper = document.getElementById('p1_leavePeriodWrapper');
+      const p2Wrapper = document.getElementById('p2_durationWrapper');
+
+      if (dateMode === 'ranges') {
+        const rangeRows = document.querySelectorAll('.range-row');
+        const ranges = [];
+        rangeRows.forEach(r => {
+          const from = formatDate(r.querySelector('.r-from').value);
+          const to = formatDate(r.querySelector('.r-to').value);
+          if (from || to) ranges.push({ from, to });
+        });
+
+        if (ranges.length <= 1) {
+          const f = ranges[0]?.from || '';
+          const t = ranges[0]?.to || '';
+          p1Wrapper.innerHTML = `
+            <span class="font-bold">Leave Period: on/from</span> 
+            <span class="dotted-line min-w-[140px] text-center">${f}</span>
+            <span class="font-bold mx-2">to</span> 
+            <span class="dotted-line min-w-[140px] text-center">${t}</span>
+          `;
+          p2Wrapper.innerHTML = `
+            <span class="font-bold">Duration (Dates) :</span>
+            <span class="font-bold ml-2">From</span>
+            <span class="dotted-line min-w-[130px] text-center">${f}</span>
+            <span class="font-bold mx-2">to</span>
+            <span class="dotted-line min-w-[130px] text-center">${t}</span>
+          `;
+        } else {
+          let p1Html = `<span class="font-bold">Leave Period: on/from</span><div class="ml-4 mt-1 space-y-1">`;
+          let p2Html = `<span class="font-bold">Duration (Dates) :</span><div class="ml-4 mt-1 space-y-1">`;
+          ranges.forEach(rng => {
+            p1Html += `<div>From <span class="dotted-line min-w-[110px] text-center">${rng.from}</span> to <span class="dotted-line min-w-[110px] text-center">${rng.to}</span></div>`;
+            p2Html += `<div>From <span class="dotted-line min-w-[110px] text-center">${rng.from}</span> to <span class="dotted-line min-w-[110px] text-center">${rng.to}</span></div>`;
+          });
+          p1Html += `</div>`;
+          p2Html += `</div>`;
+          p1Wrapper.innerHTML = p1Html;
+          p2Wrapper.innerHTML = p2Html;
+        }
+      } else {
+        const specificRows = document.querySelectorAll('.s-date');
+        const dates = [];
+        specificRows.forEach(input => {
+          if (input.value) dates.push(formatDate(input.value));
+        });
+        const datesString = dates.join(', ');
+
+        p1Wrapper.innerHTML = `
+          <span class="font-bold">Leave Period: on/from</span> 
+          <span class="dotted-line min-w-[320px] pl-2">${datesString}</span>
+        `;
+        p2Wrapper.innerHTML = `
+          <span class="font-bold">Duration (Dates) :</span>
+          <span class="dotted-line min-w-[320px] pl-2">${datesString}</span>
+        `;
+      }
+
+      // 4. Populate Alternative Class Arrangement Table
+      const tbody = document.getElementById('p2_table_body');
+      tbody.innerHTML = '';
+      const inputRows = document.querySelectorAll('.arrangement-row');
+
+      let rowCount = 0;
+      inputRows.forEach(r => {
+        const d = r.querySelector('.r-date').value;
+        const c = r.querySelector('.r-class').value;
+        const s = r.querySelector('.r-sub').value;
+        const p = r.querySelector('.r-period').value;
+        const n = r.querySelector('.r-name').value;
+        if (d || c || s || p || n) {
+          tbody.innerHTML += `
+            <tr style="height: 38px;">
+              <td class="p-2 border">${d}</td>
+              <td class="p-2 border">${c}</td>
+              <td class="p-2 border">${s}</td>
+              <td class="p-2 border">${p}</td>
+              <td class="p-2 border">${n}</td>
+              <td class="p-2 border"></td>
+            </tr>
+          `;
+          rowCount++;
+        }
+      });
+
+      const totalPaddedRows = Math.max(6, rowCount);
+      for (let i = rowCount; i < totalPaddedRows; i++) {
+        tbody.innerHTML += `
+          <tr style="height: 38px;">
+            <td class="p-2 border">&nbsp;</td>
+            <td class="p-2 border">&nbsp;</td>
+            <td class="p-2 border">&nbsp;</td>
+            <td class="p-2 border">&nbsp;</td>
+            <td class="p-2 border">&nbsp;</td>
+            <td class="p-2 border">&nbsp;</td>
+          </tr>
+        `;
+      }
+
+      // 5. Generate and Merge PDF
+      const optP1 = {
+        margin: 0,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      const optP2 = {
+        margin: 0,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+
+      const p1Element = document.getElementById('print-page-1');
+      const p2Element = document.getElementById('print-page-2');
+
+      const pdf1Blob = await html2pdf().set(optP1).from(p1Element).outputPdf('arraybuffer');
+      const pdf2Blob = await html2pdf().set(optP2).from(p2Element).outputPdf('arraybuffer');
+
+      const mergedPdf = await PDFLib.PDFDocument.create();
+      const doc1 = await PDFLib.PDFDocument.load(pdf1Blob);
+      const doc2 = await PDFLib.PDFDocument.load(pdf2Blob);
+
+      const [page1] = await mergedPdf.copyPages(doc1, [0]);
+      const [page2] = await mergedPdf.copyPages(doc2, [0]);
+
+      mergedPdf.addPage(page1);
+      mergedPdf.addPage(page2);
+
+      const mergedPdfBytes = await mergedPdf.save();
+
+      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `PhD_Leave_Application_${studentName.trim() || 'Document'}.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+</body>
+</html>
