@@ -8,27 +8,36 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <style>
+    /* Strict dimensions to prevent html2canvas from guessing sizes */
     .a4-portrait {
       width: 210mm;
-      min-height: 297mm;
+      height: 297mm; 
       padding: 20mm 15mm;
       background: #ffffff;
       color: #000000;
       font-family: "Times New Roman", Times, serif;
       box-sizing: border-box;
+      position: relative; /* Required for sticking footer to bottom */
     }
     .a4-landscape {
       width: 297mm;
-      min-height: 210mm;
+      height: 210mm;
       padding: 15mm 20mm;
       background: #ffffff;
       color: #000000;
       font-family: "Times New Roman", Times, serif;
       box-sizing: border-box;
+      position: relative;
     }
     .dotted-line {
       border-bottom: 1px dotted #000;
       display: inline-block;
+    }
+    .dotted-wrap {
+      border-bottom: 1px dotted #000;
+      display: inline;
+      line-height: 1.6;
+      word-wrap: break-word;
     }
     table, th, td {
       border: 1px solid black;
@@ -54,7 +63,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
 
-  <div class="max-w-4xl mx-auto py-10 px-4">
+  <div class="max-w-4xl mx-auto py-10 px-4 relative z-10">
     <div class="bg-white rounded-xl shadow-md p-8 border border-gray-200">
       <h1 class="text-2xl font-bold text-center text-gray-900 mb-2">Ph.D. Leave Application Generator</h1>
       <p class="text-center text-sm text-gray-500 mb-8">Department of Mathematics, SVNIT Surat</p>
@@ -193,9 +202,11 @@
     </div>
   </div>
 
-  <div style="position: absolute; left: -9999px; top: 0;">
+  <!-- Hidden Print Container: Fixed positioning and low opacity forces widths to render properly without messing up layout -->
+  <div id="print-container" style="position: fixed; top: 0; left: 0; z-index: -999; opacity: 0.01; pointer-events: none;">
     
-    <div id="print-page-1" class="a4-portrait flex flex-col justify-between">
+    <div id="print-page-1" class="a4-portrait">
+      <!-- Main Content Container -->
       <div>
         <div class="text-center font-bold mb-8">
           <p class="text-xl underline">Department of Mathematics</p>
@@ -242,7 +253,7 @@
           </div>
         </div>
 
-        <div class="flex justify-between items-end mt-16 text-[15px]">
+        <div class="flex justify-between items-end mt-12 text-[15px]">
           <div class="font-bold">Through Supervisor</div>
           <div class="text-center font-bold">
             <div class="h-10"></div>
@@ -250,7 +261,7 @@
           </div>
         </div>
 
-        <div class="mt-12">
+        <div class="mt-8">
           <div class="text-center font-bold underline mb-2 text-sm">Office Record</div>
           <table class="w-full text-sm">
             <tr>
@@ -273,23 +284,22 @@
         </div>
       </div>
 
-      <div>
-        <div class="flex justify-between items-end mt-12 text-[15px] font-bold">
+      <!-- Absolute Footer forces content perfectly to the bottom regardless of height -->
+      <div style="position: absolute; bottom: 20mm; left: 15mm; right: 15mm;">
+        <div class="flex justify-between items-end text-[15px] font-bold">
           <div>Signature of Ph. D Coordinator</div>
           <div>Head of the Department</div>
         </div>
-
         <div class="mt-6 text-xs italic text-gray-700">
           *In case of Duty Leave, Please attach reference documents.
         </div>
-
         <div class="text-right text-xs mt-4">
           Page | 1
         </div>
       </div>
     </div>
 
-    <div id="print-page-2" class="a4-landscape flex flex-col justify-between">
+    <div id="print-page-2" class="a4-landscape">
       <div>
         <div class="text-center font-bold mb-4">
           <p class="text-lg underline">Department of Mathematics , SVNIT, SURAT</p>
@@ -323,7 +333,8 @@
         </table>
       </div>
 
-      <div class="mt-8">
+      <!-- Absolute Footer forces alignment perfectly to the bottom -->
+      <div style="position: absolute; bottom: 15mm; left: 20mm; right: 20mm;">
         <div class="flex justify-between items-end text-sm">
           <div>
             <span class="font-bold">Date:</span>
@@ -334,7 +345,6 @@
             <span class="dotted-line min-w-[180px]"></span>
           </div>
         </div>
-
         <div class="text-right text-xs mt-6">
           Page | 2
         </div>
@@ -518,7 +528,7 @@
         optCasual.classList.add('struck');
       }
 
-      // 3. Date Presentation (DD-MM-YYYY format)
+      // 3. Date Presentation
       const dateMode = document.querySelector('input[name="dateMode"]:checked').value;
       const p1Wrapper = document.getElementById('p1_leavePeriodWrapper');
       const p2Wrapper = document.getElementById('p2_durationWrapper');
@@ -567,14 +577,16 @@
           if (input.value) dates.push(formatDate(input.value));
         });
         const datesString = dates.join(', ');
-
+        
+        const emptySpaces = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+        
         p1Wrapper.innerHTML = `
           <span class="font-bold">Leave Period: on/from</span> 
-          <span class="dotted-line min-w-[320px] pl-2">${datesString}</span>
+          <span class="dotted-wrap pl-2">${datesString ? datesString : emptySpaces}</span>
         `;
         p2Wrapper.innerHTML = `
           <span class="font-bold">Duration (Dates) :</span>
-          <span class="dotted-line min-w-[320px] pl-2">${datesString}</span>
+          <span class="dotted-wrap pl-2">${datesString ? datesString : emptySpaces}</span>
         `;
       }
 
@@ -620,17 +632,18 @@
       }
 
       // 5. Generate and Merge PDF
+      // Added scrollY: 0 and scrollX: 0 to fix window scroll offset cutting headers off
       const optP1 = {
         margin: 0,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, scrollY: 0, scrollX: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
       const optP2 = {
         margin: 0,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, scrollY: 0, scrollX: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
       };
 
